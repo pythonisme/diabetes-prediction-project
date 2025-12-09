@@ -1,0 +1,4 @@
+*.joblib  # Exclude model file if large/sensitive
+*.csv     # Exclude datasets if large (you can add them later if needed)
+__pycache__/
+*.pyc
