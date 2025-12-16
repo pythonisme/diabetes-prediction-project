@@ -17,6 +17,8 @@ Easy experimentation: Swap models or change scoring metrics via the provided cus
 Bash cd GUI
 python "Diabetes GUI.py"
 
+![Screenshot of Diabetes GUI](IMAGES/gui_screenshot.png)
+
 A window opens.
 Enter patient values (Pregnancies, Glucose, etc.).
 Click Predict → Shows "Diabetes" or "No Diabetes" with confidence and risk percentage.
