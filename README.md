@@ -21,7 +21,6 @@ Trains several models, applies SMOTE for imbalance, tunes Logistic Regression, a
 Fully reproducible with fixed seeds and stable library versions.
 
 ### 3. Desktop GUI App (Tkinter)
-```bash
 cd GUI
 python "GUI.py"
 
@@ -30,7 +29,7 @@ A window opens where you can enter patient details and get an instant prediction
 #### Optional: Build a standalone executable (Windows)
 Place GUI.spec, GUI.py, and lr_final_for_diabetes.joblib in the GUI folder.
 Install PyInstaller: pip install pyinstaller==6.17.0
-Run:Bashcd GUI
+Run:cd GUI
 pyinstaller "GUI.spec" --onefile --windowed --name="Diabetes Predictor" --add-data "lr_final_for_diabetes.joblib;." --clean
 Find Diabetes Predictor.exe in GUI/dist (~350 MB).
 
