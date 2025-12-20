@@ -2,18 +2,20 @@ name: Deploy to Hugging Face Space
 
 on:
   push:
-    branches: [ main ]   # triggers on every push to main
-  workflow_dispatch:     # lets you run it manually
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Push to Hugging Face Space
         env:
-          HF_Token: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git remote add space https://huggingface.co/spaces/hipython/diabetes_prediction || true
-          git push --force https://$HF_TOKEN@huggingface.co/spaces/hipython/diabetes_prediction main
+          git push --force https://hipython:$HF_TOKEN@huggingface.co/spaces/hipython/diabetes_prediction main/$HF_TOKEN@huggingface.co/spaces/hipython/diabetes_prediction main
