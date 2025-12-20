@@ -1,5 +1,3 @@
-name: Deploy to Hugging Face Space
-
 on:
   push:
     branches: [ main ]
@@ -15,6 +13,6 @@ jobs:
 
       - name: Push to Hugging Face Space
         env:
-          HF_TOKEN: ${{ diabetes_prediction.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git push --force https://hipython:${HF_TOKEN}@huggingface.co/spaces/hipython/diabetes_prediction main
