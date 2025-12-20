@@ -17,4 +17,4 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://hipython:${HF_TOKEN}@huggingface.co/spaces/hipython/diabetes_prediction main
+          git push --force https://hipython:${HF_TOKEN}@huggingface.co/spaces/hipython/diabetes_prediction HEAD:main
