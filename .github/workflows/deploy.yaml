@@ -11,11 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Important for full history
 
       - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git remote add space https://huggingface.co/spaces/hipython/diabetes_prediction || true
-          git push --force https://hipython:$HF_TOKEN@huggingface.co/spaces/hipython/diabetes_prediction main/$HF_TOKEN@huggingface.co/spaces/hipython/diabetes_prediction main
+          git push --force space "refs/*:refs/*"  # This pushes ALL refs properly
+          # Alternative if above doesn't work: git push --force --mirror space
