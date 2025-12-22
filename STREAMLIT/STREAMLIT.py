@@ -3,108 +3,110 @@ import joblib
 import pandas as pd
 import os
 
+# --- Load Model ---
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "lr_final_for_diabetes.joblib")
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'lr_final_for_diabetes.joblib')
 try:
     model = joblib.load(MODEL_PATH)
 except FileNotFoundError:
-    st.error(f'Model not found! Please ensure "{MODEL_PATH}" is in the app directory.')
+    st.error("Model file not found! Upload 'lr_final_for_diabetes.joblib'.")
     st.stop()
 
-st.title('Diabetes Risk Prediction')
-
+# --- UI ---
+st.title("Diabetes Risk Prediction")
 st.markdown("""
-Enter the patient's details below to predict the risk of diabetes using a trained logistic regression model  
-(based on the Pima Indians Diabetes dataset).
+Predict diabetes risk using a Logistic Regression model trained on the Pima Indians Diabetes dataset.  
+**Use sliders for quick adjustment or type exact values – they sync automatically!**
 """)
 
-# Input fields
-pregnancies    = st.number_input('Pregnancies', min_value=0, max_value=20, value=1, step=1,
-                              help='Number of times pregnant (0-20 typical)')
+st.info("💡 Slider and number input are fully synchronized for precise control.")
 
-glucose        = st.number_input('Glucose (mg/dL)', min_value=50.0, max_value=400.0, value=100.0, step=1.0,
-                                 help='Plasma glucose concentration (0-400, typical 70-200)')
+# --- Synced Slider + Number Input ---
+def synced_slider(label: str, min_val, max_val, default, step=1.0, format_str=None, help_text=""):
+    key = f"{label.lower().replace(' ', '_')}_synced"
+    
+    if key not in st.session_state:
+        st.session_state[key] = float(default) if step < 1 else int(default)
+    
+    col_slider, col_input = st.columns([4, 1])
+    
+    with col_slider:
+        slider_val = st.slider(
+            label, min_value=min_val, max_value=max_val,
+            value=st.session_state[key], step=step,
+            key=f"{key}_slider", help=help_text
+        )
+    
+    with col_input:
+        input_val = st.number_input(
+            "", min_value=min_val, max_value=max_val,
+            value=st.session_state[key], step=step,
+            format=format_str if format_str else ("%d" if step >= 1 else "%.2f"),
+            key=f"{key}_input", label_visibility="collapsed"
+        )
+    
+    current_val = st.session_state[key]
+    if slider_val != current_val:
+        st.session_state[key] = type(current_val)(slider_val)
+    if input_val != current_val:
+        st.session_state[key] = type(current_val)(input_val)
+    
+    return st.session_state[key]
 
-blood_pressure = st.number_input('Blood Pressure (mmHg)', min_value=.0, max_value=200.0, value=70.0, step=1.0,
-                                 help='Diastolic blood pressure (typical 60-120)')
+# --- Inputs ---
+col1, col2 = st.columns(2)
 
-skin_thickness = st.number_input('Skin Thickness (mm)', min_value=10.0, max_value=100.0, value=20.0, step=1.0,
-                                 help='Triceps skinfold thickness (typical 0-99, 0 often missing)')
+with col1:
+    pregnancies    = synced_slider("Pregnancies",            0,  15,   0, step=1, help_text="Number of times pregnant")
+    glucose        = synced_slider("Glucose (mg/dL)",       50, 200, 100, step=1, help_text="Key diabetes indicator")
+    blood_pressure = synced_slider("Blood Pressure (mmHg)", 30, 140,  70, step=1, help_text="Diastolic")
+    skin_thickness = synced_slider("Skin Thickness (mm)",    0,  99,  20, step=1, help_text="Triceps skinfold")
 
-insulin        = st.number_input('Insulin (mu U/ml)', min_value=20.0, max_value=900.0, value=80.0, step=1.0,
-                                 help='2-Hour serum insulin (typical 0-846, 0 often missing)')
+with col2:
+    insulin = synced_slider("Insulin (μU/ml)",               0,  900,   80, step=5,     help_text="2-Hour serum insulin")
+    bmi     = synced_slider("BMI (kg/m²)",                15.0, 70.0, 30.0, step=0.1,  format_str="%.1f", help_text="Major risk factor")
+    dpf     = synced_slider("Diabetes Pedigree Function", 0.07, 2.50, 0.50, step=0.01, format_str="%.3f", help_text="Genetic score")
+    age     = synced_slider("Age (years)",                  20,  120,   30, step=1,     help_text="Patient age")
 
-bmi            = st.number_input('BMI (kg/m²)', min_value=15.0, max_value=70.0, value=30.0, step=0.1,
-                                 help='Body mass index (typical 18-67)')
-
-dpf            = st.number_input('Diabetes Pedigree Function', min_value=0.1, max_value=3.0, value=0.5, step=0.01,
-                                 help='Diabetes pedigree score (typical 0.07-2.42)')
-
-age           = st.number_input('Age (years)', min_value=10, max_value=120, value=30, step=1,
-                                help='Age in years (minimum 21 in original dataset)')
-
-if st.button('Predict'):
+# --- Prediction ---
+if st.button("Predict Risk", type="primary", use_container_width=True):
     try:
-        # Collect inputs into a list (order must match model training)
-        values = [
-            pregnancies,
-            glucose,
-            blood_pressure,
-            skin_thickness,
-            insulin,
-            bmi,
-            dpf,
-            age
-        ]
+        input_data = [pregnancies, glucose, blood_pressure, skin_thickness,
+                      insulin, bmi, dpf, age]
 
-        
-        if any(v < 0 for v in values):
-            raise ValueError("All values must be non-negative.")
+        input_df = pd.DataFrame([input_data], columns=[
+            'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness',
+            'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age'
+        ])
 
+        prediction = model.predict(input_df)[0]
+        proba      = model.predict_proba(input_df)[0]
+        risk_prob  = proba[1] * 100
+        confidence = max(proba) * 100
 
+        result     = "Diabetes" if prediction == 1 else "No Diabetes"
 
-        VALID_RANGES = [
-        #   (index, name, min_val, max_val, metric)
-            (1, 'Glucose',                  50,  400, 'mg/dL'),
-            (2, 'BloodPressure',            25,  200, 'mmHg'),
-            (3, 'SkinThickness',            10,  100, 'mm'),
-            (4, 'Insulin',                  20,  140, 'mu U/ml'),
-            (5, 'BMI',                      15,   70, 'kg/m²'),
-            (6, 'DiabetesPedigreeFunction', 0.1, 3.0, 'score'),
-            (7, 'Age',                      10,  120, 'years')
-        ]
-        for idx, name, min_val, max_val, metric in VALID_RANGES:
-        
-            val = values[idx]
-            if not (min_val <= val <= max_val):
-                raise ValueError(f'{name} Should be between {min_val} - {max_val} {metric}')
-
-        
-        input_df    = pd.DataFrame([values],
-                                   columns=['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness',
-                                            'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age'])
-
-        prediction  = model.predict(input_df)[0]
-        probability = model.predict_proba(input_df)[0]
-
-        result = 'Diabetes' if prediction == 1 else 'No Diabetes'
-        confidence = max(probability) * 100
-        diabetes_risk = probability[1] * 100
-
-        st.markdown(f"### **Prediction: {result}**")
+        st.markdown(f"### Prediction: **{result}**")
         if prediction == 1:
-            st.error(result)  # Red emphasis
+            st.error("⚠️ High Risk Detected")
         else:
-            st.success(result)  # Green emphasis
+            st.success("✅ Low Risk")
+            
+        st.markdown("#### Results")
+        st.markdown(f"##### Diabetes Risk Probability: {risk_prob:.1f}%", )
+        st.markdown(f"##### Model Confidence: {confidence:.1f}%")
 
-        st.markdown(f"**Confidence:** {confidence:.1f}%  \n"
-                    f"**Diabetes Risk Probability:** {diabetes_risk:.1f}%")
+        st.progress(risk_prob / 100)
 
-    except ValueError as e:
-        st.error(f"Invalid Input: {e}")
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        st.error(f"Error: {e}")
 
+# --- Disclaimer ---
 st.markdown("---")
-st.caption("Note: This is a demonstration tool based on a logistic regression model trained on the Pima Indians Diabetes dataset. "
-           "It is not a substitute for professional medical diagnosis.")
+st.warning("""
+***Disclaimer: ⚠️***  
+This tool is for educational purposes only and is not a medical diagnosis.  
+Consult a healthcare professional for real medical advice.
+""")
+
+
