@@ -23,35 +23,43 @@ st.info("💡 Slider and number input are fully synchronized for precise control
 
 # --- Synced Slider + Number Input ---
 def synced_slider(label: str, min_val, max_val, default, step=1.0, format_str=None, help_text=""):
-    key = f"{label.lower().replace(' ', '_')}_synced"
-    
-    if key not in st.session_state:
-        st.session_state[key] = float(default) if step < 1 else int(default)
-    
+    base = label.lower().replace(' ', '_')
+    slider_key = f"{base}_slider"
+    input_key = f"{base}_input"
+
+    # Initialise both widgets once, with the correct type (float vs int)
+    init_val = float(default) if step < 1 else int(default)
+    if slider_key not in st.session_state:
+        st.session_state[slider_key] = init_val
+    if input_key not in st.session_state:
+        st.session_state[input_key] = init_val
+
+    # Callbacks: whichever widget changes copies its value to the other one
+    def slider_changed():
+        st.session_state[input_key] = st.session_state[slider_key]
+
+    def input_changed():
+        st.session_state[slider_key] = st.session_state[input_key]
+
     col_slider, col_input = st.columns([4, 1])
-    
+
     with col_slider:
-        slider_val = st.slider(
+        st.slider(
             label, min_value=min_val, max_value=max_val,
-            value=st.session_state[key], step=step,
-            key=f"{key}_slider", help=help_text
+            step=step, key=slider_key, help=help_text,
+            on_change=slider_changed
         )
-    
+
     with col_input:
-        input_val = st.number_input(
-            "", min_value=min_val, max_value=max_val,
-            value=st.session_state[key], step=step,
+        st.number_input(
+            label, min_value=min_val, max_value=max_val,
+            step=step,
             format=format_str if format_str else ("%d" if step >= 1 else "%.2f"),
-            key=f"{key}_input", label_visibility="collapsed"
+            key=input_key, label_visibility="collapsed",
+            on_change=input_changed
         )
-    
-    current_val = st.session_state[key]
-    if slider_val != current_val:
-        st.session_state[key] = type(current_val)(slider_val)
-    if input_val != current_val:
-        st.session_state[key] = type(current_val)(input_val)
-    
-    return st.session_state[key]
+
+    return st.session_state[slider_key]
 
 # --- Inputs ---
 col1, col2 = st.columns(2)
@@ -93,7 +101,7 @@ if st.button("Predict Risk", type="primary", use_container_width=True):
             st.success("✅ Low Risk")
             
         st.markdown("#### Results")
-        st.markdown(f"##### Diabetes Risk Probability: {risk_prob:.1f}%", )
+        st.markdown(f"##### Diabetes Risk Probability: {risk_prob:.1f}%")
         st.markdown(f"##### Model Confidence: {confidence:.1f}%")
 
         st.progress(risk_prob / 100)
