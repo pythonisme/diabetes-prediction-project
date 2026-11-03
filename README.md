@@ -33,8 +33,6 @@ Run:cd GUI
 pyinstaller "GUI.spec" --onefile --windowed --name="Diabetes Predictor" --add-data "lr_final_for_diabetes.joblib;." --clean
 Find Diabetes Predictor.exe in GUI/dist (~350 MB).
 
-### 4. Web App (Streamlit)
-Live demo: https://streamlit.app
 
 #### Run locally:
 Bashcd STREAMLIT
